@@ -2,6 +2,7 @@ namespace ServiceControl.CompositeViews.Messages
 {
     using System.Linq;
     using Infrastructure.Extensions;
+    using MessageAuditing;
     using Nancy;
     using Raven.Client;
     using Raven.Client.Linq;
@@ -45,22 +46,21 @@ namespace ServiceControl.CompositeViews.Messages
 
         dynamic SearchByKeyword(string keyword, string name)
         {
-            using (var session = Store.OpenSession())
-            {
-                RavenQueryStatistics stats;
-                var results = session.Query<MessagesViewIndex.SortAndFilterOptions, MessagesViewIndex>()
-                    .Statistics(out stats)
-                    .Search(x => x.Query, keyword)
-                    .Where(m => m.ReceivingEndpointName == name)
-                    .Sort(Request)
-                    .Paging(Request)
-                    .TransformWith<MessagesViewTransformer, MessagesView>()
-                    .ToArray();
+            var results = ESClient.Search<ProcessedMessage>(
+                _ =>
+                    _.Query(
+                        q =>
+                            q.Bool(
+                                b =>
+                                    b.Must(bc => bc.Term("ReceivingEndpointName", name),
+                                        x => x.Match(y => y.QueryString(keyword).OnField("_all"))))))
+                .Documents.ToArray();
 
-                return Negotiate.WithModel(results)
-                    .WithPagingLinksAndTotalCount(stats, Request)
-                    .WithEtagAndLastModified(stats);
-            }
+
+            return Negotiate.WithModel(results)
+                //.WithPagingLinksAndTotalCount(stats, Request)
+                //.WithEtagAndLastModified(stats)
+                ;
         }
 
         dynamic SearchByKeyword(string keyword)

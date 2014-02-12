@@ -2,6 +2,7 @@
 {
     using global::Nancy;
     using global::Nancy.Responses.Negotiation;
+    using Nest;
     using Raven.Client;
 
     public abstract class BaseModule : NancyModule
@@ -31,6 +32,8 @@
         }
 
         public IDocumentStore Store { get; set; }
+
+        public ElasticClient ESClient { get; set; }
     }
 
 }
