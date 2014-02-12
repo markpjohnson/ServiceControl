@@ -2,13 +2,13 @@
 {
     using Contracts.Operations;
     using Infrastructure;
+    using Nest;
     using NServiceBus;
     using Plugin.CustomChecks.Messages;
-    using Raven.Client;
 
     class SaveCustomCheckHandler : IHandleMessages<ReportCustomCheckResult>
     {
-        public IDocumentSession Session { get; set; }
+        public ElasticClient ESClient { get; set; }
         public IBus Bus { get; set; }
 
         public void Handle(ReportCustomCheckResult message)
@@ -16,7 +16,7 @@
             var originatingEndpoint = EndpointDetails.SendingEndpoint(Bus.CurrentMessageContext.Headers);
             var id = DeterministicGuid.MakeId(message.CustomCheckId, originatingEndpoint.Name,
                 originatingEndpoint.Machine);
-            var customCheck = Session.Load<CustomCheck>(id) ?? new CustomCheck
+            var customCheck = ESClient.Get<CustomCheck>(id.ToString()) ?? new CustomCheck
             {
                 Id = id,
             };
@@ -28,7 +28,7 @@
             customCheck.FailureReason = message.Result.FailureReason;
             customCheck.OriginatingEndpoint = originatingEndpoint;
 
-            Session.Store(customCheck);
+            ESClient.Index(customCheck);
         }
     }
 }

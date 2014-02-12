@@ -3,18 +3,18 @@
     using System;
     using Contracts.MessageFailures;
     using InternalMessages;
+    using Nest;
     using NServiceBus;
-    using Raven.Client;
 
     public class ArchiveMessageHandler : IHandleMessages<ArchiveMessage>
     {
-        public IDocumentSession Session { get; set; }
+        public ElasticClient ESClient { get; set; }
 
         public IBus Bus { get; set; }
 
         public void Handle(ArchiveMessage message)
         {
-            var failedMessage = Session.Load<FailedMessage>(new Guid(message.FailedMessageId));
+            var failedMessage = ESClient.Get<FailedMessage>(new Guid(message.FailedMessageId).ToString());
 
             if (failedMessage == null)
             {

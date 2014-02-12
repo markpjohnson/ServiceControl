@@ -2,18 +2,18 @@
 {
     using System.Linq;
     using Contracts.Operations;
+    using Nest;
     using NServiceBus;
-    using Raven.Client;
 
     class ImportFailedMessageHandler : IHandleMessages<ImportFailedMessage>
     {
-        public IDocumentSession Session { get; set; }
+        public ElasticClient ESClient { get; set; }
 
         public void Handle(ImportFailedMessage message)
         {
-            var messageId = "FailedMessages/" + message.UniqueMessageId;
+            var messageId = /*"FailedMessages/" +*/ message.UniqueMessageId;
 
-            var failure = Session.Load<FailedMessage>(messageId) ?? new FailedMessage
+            var failure = ESClient.Get<FailedMessage>(messageId) ?? new FailedMessage
             {
                 Id = messageId,
                 UniqueMessageId = message.UniqueMessageId
@@ -42,7 +42,7 @@
                 MessageIntent = message.PhysicalMessage.MessageIntent,
             });
 
-            Session.Store(failure);
+            ESClient.Index(failure);
         }
     }
 }

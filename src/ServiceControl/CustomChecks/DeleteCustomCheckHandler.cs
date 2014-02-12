@@ -1,21 +1,21 @@
 ﻿namespace ServiceControl.CustomChecks
 {
+    using Nest;
     using NServiceBus;
-    using Raven.Client;
 
     class DeleteCustomCheckHandler : IHandleMessages<DeleteCustomCheck>
     {
-        public IDocumentSession Session { get; set; }
+        public ElasticClient ESClient { get; set; }
 
         public IBus Bus { get; set; }
 
         public void Handle(DeleteCustomCheck message)
         {
-            var customCheck = Session.Load<CustomCheck>(message.Id);
+            var customCheck = ESClient.Get<CustomCheck>(message.Id.ToString());
 
             if (customCheck != null)
             {
-                Session.Delete(customCheck);
+                ESClient.Delete(customCheck);
             }
 
             Bus.Publish(new CustomCheckDeleted {Id = message.Id});

@@ -3,16 +3,15 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using InternalMessages;
+    using Nest;
     using NServiceBus;
     using NServiceBus.Transports;
     using Operations.BodyStorage;
-    using Raven.Client;
 
     public class PerformRetryHandler : IHandleMessages<PerformRetry>
     {
-        public IDocumentSession Session { get; set; }
+        public ElasticClient ESClient { get; set; }
 
 
         public ISendMessages Forwarder { get; set; }
@@ -21,38 +20,38 @@
 
         public void Handle(PerformRetry message)
         {
-            var failedMessage = Session.Load<FailedMessage>(new Guid(message.FailedMessageId));
-
-            if (failedMessage == null)
-            {
-                throw new ArgumentException("Can't find the failed message with id: " + message.FailedMessageId);
-            }
-
-            var attempt = failedMessage.ProcessingAttempts.Last();
-
-            var originalHeaders = attempt.Headers;
-
-            var headersToRetryWith = originalHeaders.Where(kv => !KeysToRemoveWhenRetryingAMessage.Contains(kv.Key))
-                .ToDictionary(kv => kv.Key, kv => kv.Value);
-
-            headersToRetryWith["ServiceControl.RetryId"] = message.RetryId.ToString();
-
-
-            using (var stream = BodyStorage.Fetch(message.FailedMessageId))
-            {
-                var transportMessage = new TransportMessage(failedMessage.Id, headersToRetryWith)
-                {
-                    Body = ReadFully(stream),
-                    CorrelationId = attempt.CorrelationId,
-                    Recoverable = attempt.Recoverable,
-                    MessageIntent = attempt.MessageIntent,
-                    ReplyToAddress = Address.Parse(attempt.ReplyToAddress)
-                };
-
-                failedMessage.Status = FailedMessageStatus.RetryIssued;
-
-                Forwarder.Send(transportMessage, message.TargetEndpointAddress);
-            }
+//            var failedMessage = ESClient.Get<FailedMessage>(new Guid(message.FailedMessageId).ToString());
+//
+//            if (failedMessage == null)
+//            {
+//                throw new ArgumentException("Can't find the failed message with id: " + message.FailedMessageId);
+//            }
+//
+//            var attempt = failedMessage.ProcessingAttempts.Last();
+//
+//            var originalHeaders = attempt.Headers;
+//
+//            var headersToRetryWith = originalHeaders.Where(kv => !KeysToRemoveWhenRetryingAMessage.Contains(kv.Key))
+//                .ToDictionary(kv => kv.Key, kv => kv.Value);
+//
+//            headersToRetryWith["ServiceControl.RetryId"] = message.RetryId.ToString();
+//
+//
+//            using (var stream = BodyStorage.Fetch(message.FailedMessageId))
+//            {
+//                var transportMessage = new TransportMessage(failedMessage.Id, headersToRetryWith)
+//                {
+//                    Body = ReadFully(stream),
+//                    CorrelationId = attempt.CorrelationId,
+//                    Recoverable = attempt.Recoverable,
+//                    MessageIntent = attempt.MessageIntent,
+//                    ReplyToAddress = Address.Parse(attempt.ReplyToAddress)
+//                };
+//
+//                failedMessage.Status = FailedMessageStatus.RetryIssued;
+//
+//                Forwarder.Send(transportMessage, message.TargetEndpointAddress);
+//            }
         }
 
 

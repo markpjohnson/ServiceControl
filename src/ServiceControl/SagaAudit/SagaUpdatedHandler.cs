@@ -3,16 +3,16 @@
     using System.Collections.Generic;
     using System.Linq;
     using EndpointPlugin.Messages.SagaState;
+    using Nest;
     using NServiceBus;
-    using Raven.Client;
 
     public class SagaUpdatedHandler : IHandleMessages<SagaUpdatedMessage>
     {
-        public IDocumentSession Session { get; set; }
+        public ElasticClient ESClient { get; set; }
 
         public void Handle(SagaUpdatedMessage message)
         {
-            var sagaHistory = Session.Load<SagaHistory>(message.SagaId) ?? new SagaHistory
+            var sagaHistory = ESClient.Get<SagaHistory>(message.SagaId.ToString()) ?? new SagaHistory
             {
                 Id = message.SagaId,
                 SagaId = message.SagaId,
@@ -49,7 +49,7 @@
 
             AddResultingMessages(message.ResultingMessages, sagaStateChange);
 
-            Session.Store(sagaHistory);
+            ESClient.Index(sagaHistory);
         }
 
         static InitiatingMessage CreateInitiatingMessage(SagaChangeInitiator initiator)

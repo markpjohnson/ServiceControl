@@ -1,8 +1,8 @@
 ﻿namespace ServiceControl.EventLog
 {
     using Contracts.EventLog;
+    using Nest;
     using NServiceBus;
-    using Raven.Client;
 
     /// <summary>
     /// Only for events that have been defined (under EventLog\Definitions), a logentry item will 
@@ -11,7 +11,7 @@
     public class GenericAuditHandler : IHandleMessages<IEvent>
     {
         public EventLogMappings EventLogMappings { get; set; }
-        public IDocumentSession Session { get; set; }
+        public ElasticClient ESClient { get; set; }
         public IBus Bus { get; set; }
 
         public void Handle(IEvent message)
@@ -27,7 +27,7 @@
             }
             var logItem = EventLogMappings.ApplyMapping(message);
 
-            Session.Store(logItem);
+            ESClient.Index(logItem);
 
             Bus.Publish<EventLogItemAdded>(m =>
             {

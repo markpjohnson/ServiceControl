@@ -20,9 +20,9 @@
 
             var documentStore = new EmbeddableDocumentStore
             {
-                DataDirectory = Settings.DbPath,
+                RunInMemory = true,
                 UseEmbeddedHttpServer = Settings.ExposeRavenDB,
-                EnlistInDistributedTransactions = false
+                EnlistInDistributedTransactions = false,
             };
 
             if (Settings.Schema.Equals("https", StringComparison.InvariantCultureIgnoreCase))
@@ -41,24 +41,25 @@
             documentStore.Initialize();
 
             Logger.Info("Index creation started");
-
-            if (Settings.CreateIndexSync)
-            {
+//
+//            if (Settings.CreateIndexSync)
+//            {
                 IndexCreation.CreateIndexes(typeof(RavenBootstrapper).Assembly, documentStore);
-            }
-            else
-            {
-                IndexCreation.CreateIndexesAsync(typeof(RavenBootstrapper).Assembly, documentStore)
-                    .ContinueWith(c =>
-                    {
-                        if (c.IsFaulted)
-                        {
-                            Logger.Error("Index creation failed", c.Exception);
-                        }
-                    });
-            }
+//            }
+//            else
+//            {
+//                IndexCreation.CreateIndexesAsync(typeof(RavenBootstrapper).Assembly, documentStore)
+//                    .ContinueWith(c =>
+//                    {
+//                        if (c.IsFaulted)
+//                        {
+//                            Logger.Error("Index creation failed", c.Exception);
+//                        }
+//                    });
+//            }
 
             Configure.Instance.Configurer.RegisterSingleton<IDocumentStore>(documentStore);
+            
             Configure.Component(builder =>
             {
 #pragma warning disable 618

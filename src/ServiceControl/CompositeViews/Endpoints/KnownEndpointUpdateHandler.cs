@@ -1,22 +1,22 @@
 namespace ServiceControl.CompositeViews.Endpoints
 {
     using EndpointControl;
+    using Nest;
     using NServiceBus;
-    using Raven.Client;
 
     public class KnownEndpointUpdateHandler : IHandleMessages<KnownEndpointUpdate>
     {
-        public IDocumentSession Session { get; set; }
+        public ElasticClient ESClient { get; set; }
 
         public IBus Bus { get; set; }
 
         public void Handle(KnownEndpointUpdate message)
         {
-            var knownEndpoint = Session.Load<KnownEndpoint>(message.KnownEndpointId);
+            var knownEndpoint = ESClient.Get<KnownEndpoint>(message.KnownEndpointId.ToString());
 
             knownEndpoint.MonitorHeartbeat = message.MonitorHeartbeat;
 
-            Session.Store(knownEndpoint);
+            ESClient.Index(knownEndpoint);
 
             Bus.Publish(new KnownEndpointUpdated
             {

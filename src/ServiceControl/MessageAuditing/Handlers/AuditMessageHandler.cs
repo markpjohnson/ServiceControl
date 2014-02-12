@@ -1,18 +1,18 @@
 ﻿namespace ServiceControl.MessageAuditing.Handlers
 {
     using Contracts.Operations;
+    using Nest;
     using NServiceBus;
-    using Raven.Client;
 
     class AuditMessageHandler : IHandleMessages<ImportSuccessfullyProcessedMessage>
     {
-        public IDocumentSession Session { get; set; }
+        public ElasticClient ESClient { get; set; }
 
         public void Handle(ImportSuccessfullyProcessedMessage message)
         {
             var auditMessage = new ProcessedMessage(message);
 
-            Session.Store(auditMessage);
+            ESClient.Index(auditMessage);
         }
 
     }

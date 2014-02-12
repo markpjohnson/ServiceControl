@@ -2,16 +2,16 @@
 {
     using System;
     using Contracts.MessageFailures;
+    using Nest;
     using NServiceBus;
-    using Raven.Client;
 
     public class MessageFailureResolvedHandler : IHandleMessages<MessageFailureResolvedByRetry>
     {
-        public IDocumentSession Session { get; set; }
+        public ElasticClient ESClient { get; set; }
 
         public void Handle(MessageFailureResolvedByRetry message)
         {
-            var failedMessage = Session.Load<FailedMessage>(new Guid(message.FailedMessageId));
+            var failedMessage = ESClient.Get<FailedMessage>(new Guid(message.FailedMessageId).ToString());
 
             if (failedMessage == null)
             {
