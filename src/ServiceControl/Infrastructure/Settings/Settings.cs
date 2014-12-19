@@ -176,7 +176,7 @@
         {
             get
             {
-                if ((hoursToKeepMessagesBeforeExpiring < 24) || (hoursToKeepMessagesBeforeExpiring > 1440))
+                if ((hoursToKeepMessagesBeforeExpiring < 1) || (hoursToKeepMessagesBeforeExpiring > 1440))
                 {
                     Logger.ErrorFormat("HoursToKeepMessagesBeforeExpiring settings is invalid, the valid range is 24 to 1440 (60 days).  Defaulting to {0}",  HoursToKeepMessagesBeforeExpiringDefault);
                     return HoursToKeepMessagesBeforeExpiringDefault;
