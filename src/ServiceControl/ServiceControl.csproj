@@ -272,6 +272,7 @@
     </Compile>
     <Compile Include="Hosting\Options.cs" />
     <Compile Include="Infrastructure\RavenDB\Expiration\ExpiryProcessedMessageIndex.cs" />
+    <Compile Include="Infrastructure\RavenDB\Expiration\PeriodicExecutor.cs" />
     <Compile Include="Infrastructure\Settings\RegistryReader.cs" />
     <Compile Include="Infrastructure\SubscribeToAllEvents.cs" />
     <Compile Include="MessageFailures\FailedMessageViewIndexNotifications.cs" />
