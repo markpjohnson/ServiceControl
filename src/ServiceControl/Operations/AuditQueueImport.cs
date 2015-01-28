@@ -7,7 +7,6 @@
     using System.Threading;
     using Contracts.Operations;
     using NServiceBus;
-    using NServiceBus.Logging;
     using NServiceBus.ObjectBuilder;
     using NServiceBus.Pipeline;
     using NServiceBus.Satellites;
@@ -15,8 +14,11 @@
     using NServiceBus.Transports.Msmq;
     using NServiceBus.Unicast.Messages;
     using NServiceBus.Unicast.Transport;
+    using Raven.Abstractions.Logging;
     using Raven.Client;
     using ServiceBus.Management.Infrastructure.Settings;
+    using ILog = NServiceBus.Logging.ILog;
+    using LogManager = NServiceBus.Logging.LogManager;
 
     public class AuditQueueImport : IAdvancedSatellite, IDisposable
     {
@@ -26,6 +28,8 @@
 #pragma warning disable 618
         public PipelineExecutor PipelineExecutor { get; set; }
         public LogicalMessageFactory LogicalMessageFactory { get; set; }
+
+        static readonly Raven.Abstractions.Logging.ILog ravenLogger = Raven.Abstractions.Logging.LogManager.GetLogger(typeof(AuditQueueImport));
 
 #pragma warning restore 618
 
@@ -111,21 +115,25 @@
 
         static readonly ILog Logger = LogManager.GetLogger(typeof(AuditQueueImport));
         readonly AverageThroughputCalculator throughputCalculator = new AverageThroughputCalculator(
-            TimeSpan.FromSeconds(5),5,avg => Console.WriteLine(string.Format("Average throughput in last 5 seconds: {0,10:0.000}",avg))
-            );
+            TimeSpan.FromSeconds(5),5, (avg, tot) =>
+            {
+                Console.WriteLine("Average throughput in last 5 seconds: {0,10:0.000}. Total: {1}", avg, tot);
+                ravenLogger.Log(LogLevel.Debug, () => string.Format("Average throughput in last 5 seconds: {0,10:0.000}. Total: {1}", avg, tot));
+            });
         bool disabled;
     }
 
     public class AverageThroughputCalculator
     {
-        private readonly Action<double> onProbe;
+        private readonly Action<double, long> onProbe;
         private readonly int[] buffer;
         private readonly Stopwatch[] watches;
         private readonly int period;
         private readonly Timer timer;
         private int currentSlot;
+        long total;
 
-        public AverageThroughputCalculator(TimeSpan windowLenght, int probeFrequency, Action<double> onProbe)
+        public AverageThroughputCalculator(TimeSpan windowLenght, int probeFrequency, Action<double, long> onProbe)
         {
             this.onProbe = onProbe;
             buffer = new int[probeFrequency];
@@ -146,12 +154,13 @@
             watches[newSlot].Start();
             var sum = oldestValue + buffer.Where((t, i) => i != currentSlot).Sum();
             var average = sum / elapsed;
-            onProbe(average);
+            onProbe(average, total);
         }
 
         public void Done()
         {
             Interlocked.Increment(ref buffer[currentSlot]);
+            Interlocked.Increment(ref total);
         }
 
         public void Start()
