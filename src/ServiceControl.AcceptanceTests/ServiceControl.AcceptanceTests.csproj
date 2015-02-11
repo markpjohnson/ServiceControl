@@ -198,6 +198,7 @@
     <Compile Include="Contexts\DefaultServer.cs" />
     <Compile Include="Contexts\ManagementEndpoint.cs" />
     <Compile Include="Contexts\ManagementEndpointSetup.cs" />
+    <Compile Include="MessageFailures\When_importing_a_failed_message_with_no_processing_endpoint_header.cs" />
     <Compile Include="SagaAudit\When_multiple_messages_are_emitted_by_a_saga.cs" />
     <Compile Include="SagaAudit\When_a_message_emitted_by_a_saga_is_audited.cs" />
     <Compile Include="SagaAudit\When_a_message_hitting_a_saga_is_not_a_start_message.cs" />
