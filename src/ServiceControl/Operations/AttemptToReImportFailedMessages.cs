@@ -9,7 +9,7 @@
     using Raven.Client.Indexes;
     using ServiceBus.Management.Infrastructure.Settings;
 
-    class AttemptToReImportFailedMessages : IWantToRunWhenBusStartsAndStops
+    public class AttemptToReImportFailedMessages : IWantToRunWhenBusStartsAndStops
     {
         public AttemptToReImportFailedMessages(IDocumentStore store, ISendMessages messageSender)
         {
