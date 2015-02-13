@@ -1,7 +1,9 @@
 ﻿namespace ServiceBus.Management.AcceptanceTests.MessageFailures
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Runtime.Remoting.Contexts;
     using Contexts;
     using NServiceBus;
@@ -18,13 +20,16 @@
         [Test]
         public void Should_be_moved_to_the_service_control_error_queue()
         {
-            var context = new FailedMessageTestContext()
+            //Clear the log dir
+            var pathOfLogFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Particular\\ServiceControl\\logs\\FailedImports\\Error");
+
+            foreach (var file in Directory.EnumerateFiles(pathOfLogFile))
             {
-                MessageId = Guid.NewGuid()
-            };
+                File.Delete(file);
+            }
 
             FailedErrorImport failure = null;
-            Scenario.Define(context)
+            Scenario.Define(new FailedMessageTestContext())
                 .WithEndpoint<ManagementEndpoint>(c => c.AppConfig(PathToAppConfig))
                 .WithEndpoint<ServerEndpoint>()
                 .Done(c => c.IsMessageWrittenToFile)
@@ -46,23 +51,16 @@
             {
                 public ISendMessages SendMessages { get; set; }
 
-                public FailedMessageTestContext TestContext { get; set; }
-
                 public void Start()
                 {
                     //hack until we can fix the types filtering in default server
-                    if (TestContext == null || string.IsNullOrEmpty(TestContext.MessageId.ToString()))
-                    {
-                        return;
-                    }
-
                     if (Configure.EndpointName != "Particular.ServiceControl")
                     {
                         return;
                     }
 
                     // Transport message has no headers for Processing endpoint and the ReplyToAddress is set to null
-                    var transportMessage = new TransportMessage
+                    var transportMessage = new TransportMessage()
                     {
                         ReplyToAddress = null
                     };
@@ -81,14 +79,12 @@
 
         public class FailedMessageTestContext : ScenarioContext
         {
-            public Guid MessageId { get; set; }
-
             public bool IsMessageWrittenToFile
             {
                 get
                 {
                     var pathOfLogFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Particular\\ServiceControl\\logs\\FailedImports\\Error");
-                    return File.Exists(Path.Combine(pathOfLogFile, string.Format("{0}.txt", MessageId)));
+                    return Directory.EnumerateFiles(pathOfLogFile).Any();
                 }
             }
         }
